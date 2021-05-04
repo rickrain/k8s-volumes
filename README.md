@@ -36,7 +36,7 @@ kubectl port-forward [pod-name] 8080:80
 # Our change was not persisted.
 
 # Remove deployment
-kubectl apply -f ./nginx-deployment-01.yaml
+kubectl delete -f ./nginx-deployment-01.yaml
 ```
 
 ## Node storage
@@ -84,7 +84,7 @@ kubectl port-forward [pod-name] 8080:80
 # This is because index.html was created on the nodes files system.
 
 # Remove deployment
-kubectl apply -f ./nginx-deployment-02.yaml
+kubectl delete -f ./nginx-deployment-02.yaml
 
 # Re-enable the cluster autoscaler
 az aks update --resource-group fruit-smoothies-rg --name fruit-smoothies-6485-aks --enable-cluster-autoscaler --min-count 1 --max-count 3
