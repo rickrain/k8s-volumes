@@ -109,12 +109,49 @@ kubectl uncordon aks-nodepool1-13512373-vmss000003
 kubectl delete -f ./nginx-deployment-02.yaml
 
 # Delete the Azure disk
+# If you get an error indicating the disk is still attached, wait a few seconds and try again.
 az disk delete --ids $DISK_RESOURCE_ID --yes
 ```
+## NFS/SMB storage
 
+```bash
+# Create a storage account
+STG_ACCOUNT_NAME=staticfileshare$RANDOM
+az storage account create --resource-group $NODE_RG --name $STG_ACCOUNT_NAME --sku Premium_LRS --kind FileStorage
 
+# Create a file share in the storage account
+STG_CONN_STRING=$(az storage account show-connection-string --name $STG_ACCOUNT_NAME --resource-group $NODE_RG --output tsv)
+az storage share create --name data --connection-string $STG_CONN_STRING --output tsv
 
-## NFS storage
+# Create a kubernetes secret to hold the primary key to the storage account
+STG_ACCOUNT_KEY=$(az storage account keys list --account-name $STG_ACCOUNT_NAME --query "[0].value" -o tsv)
+kubectl create secret generic azure-storage --from-literal=azurestorageaccountname=$STG_ACCOUNT_NAME --from-literal=azurestorageaccountkey=$STG_ACCOUNT_KEY
+
+# Apply deployment
+kubectl apply -f ./nginx-deployment-03.yaml
+
+# Wait for public IP address
+# Open browser to public IP address - observe the response, which is the hostname
+# from the node the pod is running on.
+
+# Scale out the replicas to 20 so that you get pods spread across the two nodes.
+kubectl scale deployment nginx-deployment-03 --replicas=20
+
+# Show all the pods *and* the node that each pod is running on.
+# Notice that this time all 20 pods are running.  That is because the volume mount
+# is mounting an Azure File Share, which supports SMB 3.0 and muliple R/W nodes simultaneously.
+kubectl get pods --output wide
+
+# Open browser to public IP address - observe the response, now includes the hostnames
+# from all the pods running across the two nodes.
+# This shows that the nodes were not only able to read the file simultanously, but also write to it.
+
+# Using the Azure Portal, view the index.html file in the storage account.
+
+# Delete the deployment
+kubectl delete -f ./nginx-deployment-03.yaml
+
+```
 
 
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/
