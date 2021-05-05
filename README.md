@@ -40,7 +40,7 @@ kubectl delete -f ./nginx-deployment-01.yaml
 ```
 
 
-## Static Node Storage
+## Static Node Storage (local)
 
 ```bash
 # Disable the cluster autoscaler
@@ -112,7 +112,7 @@ kubectl delete -f ./nginx-deployment-02.yaml
 # If you get an error indicating the disk is still attached, wait a few seconds and try again.
 az disk delete --ids $DISK_RESOURCE_ID --yes
 ```
-## NFS/SMB storage
+## Static NFS/SMB storage
 
 ```bash
 # Create a storage account
@@ -150,6 +150,7 @@ kubectl get pods --output wide
 
 # Delete the deployment
 kubectl delete -f ./nginx-deployment-03.yaml
+
 
 ```
 

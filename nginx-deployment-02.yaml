@@ -35,4 +35,4 @@ spec:
           azureDisk:
             kind: Managed
             diskName: pv-static-disk
-            diskURI: /subscriptions/875759d2-f6a7-4864-a5f3-e230d6c6779c/resourceGroups/MC_fruit-smoothies-rg_fruit-smoothies-6485-aks_eastus/providers/Microsoft.Compute/disks/pv-static-disk
+            diskURI: <your disk URO>
