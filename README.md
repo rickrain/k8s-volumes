@@ -208,12 +208,65 @@ kubectl scale deployment nginx-deployment-05 --replicas=20
 
 # Delete the deployment
 kubectl delete -f ./nginx-deployment-05.yaml
+
+# Show that the pvc is deleted.
+# Also, notice that the pv that was dynamically created is deleted.
+# And finally, notice that the storage account is *not* deleted and the data in the share is still there.
+# - explain why...
+# - explain what you would change if you wanted the storage account deleted too.
 ```
 
 
 ## Increase capacity in PVC
 
 To do...
+
+```bash
+# Apply deployment
+kubectl apply -f ./nginx-deployment-06.yaml
+
+# Show how the container just creates a 500MB file in the file share.
+
+# Scale out the replicas to 11 and observe the files getting created in the file share
+kubectl scale deployment nginx-deployment-06 --replicas=11
+
+# Get a list of all the pods running
+k get pods
+
+# observe that one of the pods is going to fail.  This is because the file share ran out of space.
+# show the error
+k logs [failed pod name]
+
+# Need to expand the volume, which we can do because the azurefile storage class supports volume expansion by default.
+# Show this in the yaml
+
+# edit the pvc to increase the size from 5GB to 8GB
+k edit pvc file-storage-claim
+# This will open VIM editor
+# move cursor on top of 5 in the spec.  Type 'r8', then ':wq' to save the change.
+# Now the pvc has been expanded to 8GB
+
+# Delete the failed pod 
+k delete pod [failed pod name]
+
+# Notice that Kubernetes scheduled a new pod so your replicaset is at 11.  This time, it doesn't fail.
+# observe the new file created in the share
+
+# Scale out the replicas to 14.
+kubectl scale deployment nginx-deployment-06 --replicas=14
+
+# Observe the files created in the share and all the pods are 'Running'.  This is because we haven't exceeded the
+# new capacity of 8GB.
+
+# Delete the deployment
+kubectl delete -f ./nginx-deployment-05.yaml
+
+# Show that the pvc is deleted.
+# Also, notice that the pv that was dynamically created is deleted.
+# And finally, notice that the storage account is *not* deleted and the data in the share is still there.
+# - explain why...
+# - explain what you would change if you wanted the storage account deleted too.
+```
 
 ## Wrap up
 
