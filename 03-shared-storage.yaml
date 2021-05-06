@@ -1,16 +1,4 @@
 apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: file-storage-claim
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: azurefile-premium
-  resources:
-    requests:
-      storage: 100Gi
----
-apiVersion: v1
 kind: Service
 metadata:
   name: volumes-lb
@@ -24,7 +12,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-deployment-05
+  name: shared-storage
 spec:
   selector:
     matchLabels:
@@ -52,6 +40,7 @@ spec:
             readOnly: false
       volumes:
         - name: html
-          persistentVolumeClaim:
-            claimName: file-storage-claim
-
+          azureFile:
+            secretName: azure-storage
+            shareName: data
+            readOnly: false

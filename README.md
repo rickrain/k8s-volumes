@@ -117,6 +117,9 @@ Before you apply this deployment to your cluster, there are a few items that nee
 - Create a disk that can be attached to a node in the cluster.
 
 ```bash
+# Sign-in to your subscription if you're not already signed-in.
+az login
+
 # Define some environment variables
 AKS_WORKSHOP_RG="[your aks-workhsop resource group name]"
 AKS_WORKSHOP_CLUSTER="[your aks-workhsop cluster name]"
@@ -237,11 +240,35 @@ az disk delete --ids $DISK_RESOURCE_ID --yes
 
 ### Summary
 
-In this tutorial, you learned how an `azureDisk` volume can be used to provide storage at the node level.  As a result, you were able to observe that when a pod is deleted, data it has written to the volume is not lost.  You also observed a limitation with this kind of volume, which is, it can only be attached to a single node at a time.  This is by design.  However, there is a way enable simultaneous RW access to a volume form multiple nodes.  You will learn how to do that in the next tutorial.
+In this tutorial, you learned how an `azureDisk` volume can be used to provide storage at the node level.  As a result, you were able to observe that when a pod is deleted, data that has previously written to the volume is not lost.  You also observed a limitation with this kind of volume, which is, it can only be attached to a single node at a time.  This is by design.  However, there is a way enable simultaneous RW access to a volume form multiple nodes.  You will learn how to do that in the next tutorial.
 
-## Static NFS/SMB storage
+## Tutorial: Shared Storage (static)
+_(10 minutes)_
+
+In this tutorial, you will explore volume storage that can be shared simultaneously across multiple nodes. 
+
+The following diagram illustrates this kind of storage/persistence on the node.
+
+TODO: Insert diagram here
+
+This tutorial uses the same nginx container you used previously to demonstrate the learning objectives.  Before proceeding, review [`03-shared-storage.yaml`](./03-shared-storage.yaml) to familiarize yourself with what it does.  In particular, notice the following changes:
+
+- A 2nd container, called "index-html-producer" has been added to the deployment.  This container does what it's name inplies, which is, produces an _index.html_ file in the `mountPath` for nginx to reply back to requests with.  The container, on startup, will add a message to the _index.html_ file and then run indefinitely. As you will soon see, this is also an example whereby a single pod can run mulitple containers.
+- An `azureFile` volume called "html" was added to `spec.volumes`.  This kind of volume is one backed by a storage account using the Azure File service abstraction.  The Azure File service supports SMB 3.0 protocol, which enables mutiple nodes to attach to it simultaneously.
+  - Notice that it has some different properties that are needed, such as a `secretName` which is where it can get a key to connect to the storage account where the file share exists.
+
+### Preliminary cluster coniguration
+
+Before you apply this deployment to your cluster, there are a few items that need to be done first as described here:
+
+- Create a storage account.
+- Create a file share in the storage account.
+- Create a kubernetes secret containing the storage account name and primary key.  This secret is used by the `azureFile` volume definition to mount the file share from the pod(s).
 
 ```bash
+# Sign-in to your subscription if you're not already signed-in.
+az login
+
 # Create a storage account
 STG_ACCOUNT_NAME=staticfileshare$RANDOM
 az storage account create --resource-group $NODE_RG --name $STG_ACCOUNT_NAME --sku Premium_LRS --kind FileStorage
@@ -250,41 +277,57 @@ az storage account create --resource-group $NODE_RG --name $STG_ACCOUNT_NAME --s
 STG_CONN_STRING=$(az storage account show-connection-string --name $STG_ACCOUNT_NAME --resource-group $NODE_RG --output tsv)
 az storage share create --name data --connection-string $STG_CONN_STRING --output tsv
 
+# (optional) Use the Azure portal to view the storage account and the 'data' file share.
+
 # Create a kubernetes secret to hold the primary key to the storage account
 STG_ACCOUNT_KEY=$(az storage account keys list --account-name $STG_ACCOUNT_NAME --query "[0].value" -o tsv)
 kubectl create secret generic azure-storage --from-literal=azurestorageaccountname=$STG_ACCOUNT_NAME --from-literal=azurestorageaccountkey=$STG_ACCOUNT_KEY
+```
 
+### Work through the tutorial
+
+Now that the changes above are in place, you're ready to start the tutorial.
+
+```bash
 # Apply deployment
-kubectl apply -f ./nginx-deployment-03.yaml
+kubectl apply -f ./03-shared-storage.yaml
 
-# Wait for public IP address
-# Open browser to public IP address - observe the response, which is the hostname
-# from the node the pod is running on.
+# Wait for the 'volumes-lb' service to get a public IP
+kubectl get svc -w
+
+# When you see a value for the 'EXTERNAL_IP', press Ctrl-c
+
+# Browse to the public IP address of the 'volumes-lb' service.
+# Observe the response, which is "hello from shared-storage...".
+
+# Using the Azure portal, go look at the index.html file in the 'data' file share.
+
+# List the pod that was created and observe the node it is running on.
+kubectl get pods --output wide
 
 # Scale out the replicas to 20 so that you get pods spread across the two nodes.
-kubectl scale deployment nginx-deployment-03 --replicas=20
+kubectl scale deployment shared-storage --replicas=20
 
 # Show all the pods *and* the node that each pod is running on.
 # Notice that this time all 20 pods are running.  That is because the volume mount
 # is mounting an Azure File Share, which supports SMB 3.0 and muliple R/W nodes simultaneously.
 kubectl get pods --output wide
 
-# Open browser to public IP address - observe the response, now includes the hostnames
-# from all the pods running across the two nodes.
+# Refresh the page in your browser.
+# Observe the response, which now includes a hello message from every pod running accross both nodes.
 # This shows that the nodes were not only able to read the file simultanously, but also write to it.
 
 # Using the Azure Portal, view the index.html file in the storage account.
 
 # Delete the deployment
-kubectl delete -f ./nginx-deployment-03.yaml
-
+kubectl delete -f ./03-shared-storage.yaml
 ```
 
 ## Static NFS/SMB storage - explicit definitions
 
 ```bash
 # Apply deployment
-kubectl apply -f ./nginx-deployment-04.yaml
+kubectl apply -f ./04-shared-storage.yaml
 
 # Wait for public IP address
 # Open browser to public IP address - observe the response, which is the hostname
@@ -304,7 +347,7 @@ kubectl get pods --output wide
 # the recommended best practice and what we will see in the next section.
 
 # Delete the deployment
-kubectl delete -f ./nginx-deployment-03.yaml
+kubectl delete -f ./04-shared-storage.yaml
 
 # Delete the secret
 kubectl delete secret azure-storage
@@ -319,7 +362,7 @@ To do...
 
 ```bash
 # Apply deployment
-kubectl apply -f ./nginx-deployment-05.yaml
+kubectl apply -f ./05-shared-storage.yaml
 
 # Wait for public IP address
 # Notice also the extra time it takes for the pod to get to a running state.  This is because
@@ -331,10 +374,10 @@ kubectl apply -f ./nginx-deployment-05.yaml
 # from the node the pod is running on.
 
 # Scale out the replicas to 20 so that you get pods spread across the two nodes.
-kubectl scale deployment nginx-deployment-05 --replicas=20
+kubectl scale deployment dynamic-shared-storage --replicas=20
 
 # Delete the deployment
-kubectl delete -f ./nginx-deployment-05.yaml
+kubectl delete -f ./05-shared-storage.yaml
 
 # Show that the pvc is deleted.
 # Also, notice that the pv that was dynamically created is deleted.
@@ -349,12 +392,12 @@ To do...
 
 ```bash
 # Apply deployment
-kubectl apply -f ./nginx-deployment-06.yaml
+kubectl apply -f ./06-volume-expansion.yaml
 
 # Show how the container just creates a 500MB file in the file share.
 
 # Scale out the replicas to 11 and observe the files getting created in the file share
-kubectl scale deployment nginx-deployment-06 --replicas=11
+kubectl scale deployment dynamic-shared-storage --replicas=11
 
 # Get a list of all the pods running
 k get pods
@@ -379,13 +422,13 @@ k delete pod [failed pod name]
 # observe the new file created in the share
 
 # Scale out the replicas to 14.
-kubectl scale deployment nginx-deployment-06 --replicas=14
+kubectl scale deployment dynamic-shared-storage --replicas=14
 
 # Observe the files created in the share and all the pods are 'Running'.  This is because we haven't exceeded the
 # new capacity of 8GB.
 
 # Delete the deployment
-kubectl delete -f ./nginx-deployment-05.yaml
+kubectl delete -f ./06-volume-expansion.yaml
 
 # Show that the pvc is deleted.
 # Also, notice that the pv that was dynamically created is deleted.
