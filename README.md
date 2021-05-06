@@ -11,13 +11,13 @@ This module will guide you through the tutorials below.
 
 ## Tutorial: Pod storage (10 minutes)
 
-In this tutorial, you will explore volume data that is local to a pod.  That is, it is created when a pod is scheduled to a node and is removed when a pod is removed from the node (for any reason).  If a pod is re-created, even on the same node, any data that was written to the volume previously is lost.  In Kubernetes, this kind of storage/persistence is known as the [`emptyDir` volume](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir).
+In this tutorial, you will explore volume storage that is local to a pod.  This kind of volume storage is created when a pod is scheduled to a node and is removed when a pod is removed from the node (for any reason).  If a pod is re-created, even on the same node, any data that was written to the volume previously is lost.  In Kubernetes, this kind of storage/persistence is known as the [`emptyDir` volume](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir).
 
 The following diagram illustrates this kind of storage/persistence in a pod.
 
 TODO: Insert diagram here
 
-This tutorial will use an nginx container running on your cluster to demonstrate the learning objective.  Before proceeding, open the `01-pod-storage.yaml` file to familiarize yourself with what it does.
+This tutorial will use an nginx container running on your cluster to demonstrate the learning objective.  Before proceeding, review [`01-pod-storage.yaml`](./01-pod-storage.yaml) to familiarize yourself with what it does.
 
 
 ```bash
