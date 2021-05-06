@@ -1,44 +1,87 @@
-# Persistent Volumes & Persistent Volume Claims
+# Persistent Volumes, Claims, and Storage Classes
 
-## Container/Pod storage (emptyDir)
+TODO: Introduction here
+
+This module will guide you through the tutorials below.
+- Pod storage
+- Node storage (static)
+- File share storage (static)
+- File share storage (dynamic)
+- File share volume expansion
+
+## Tutorial: Pod storage (10 minutes)
+
+In this tutorial, you will explore volume data that is local to a pod.  That is, it is created when a pod is scheduled to a node and is removed when a pod is removed from the node (for any reason).  If a pod is re-created, even on the same node, any data that was written to the volume previously is lost.  In Kubernetes, this kind of storage/persistence is known as the [`emptyDir` volume](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir).
+
+The following diagram illustrates this kind of storage/persistence in a pod.
+
+TODO: Insert diagram here
+
+This tutorial will use an nginx container running on your cluster to demonstrate the learning objective.  Before proceeding, open the `01-pod-storage.yaml` file to familiarize yourself with what it does.
+
 
 ```bash
-# Apply deployment
-kubectl apply -f ./nginx-deployment-01.yaml
+# Apply deployment to the cluster.
+kubectl apply -f ./01-pod-storage.yaml
 
-# Setup port forwarding
+# List the pod that was created.
+kubectl get pods
+
+# Setup port forwarding so we can browse to the running container.  Replace '[pod-name]' with the name of your pod.
 kubectl port-forward [pod-name] 8080:80
 
-# Open browser to localhost:8080
+# Open browser to localhost:8080.
+# Observe that the response is the standard 'Welcome to nginx!' response.
+
+# Press Ctrl-c to terminate the port forwarding.
 
 # Make a change in the container's file system
+# Specifically, change the contents of the 'index.html' file
+# that nginx returns when you browse to it.
 kubectl exec --stdin --tty [pod-name] -- /bin/bash
 
-# Change the index.html file in the container
-# cd /usr/share/nginx/html
-# echo "Hi there!" > ./index.html
-# exit
+# Now you are in the pod's file system.  Perform the following commands:
 
-# Setup port forwarding
+#   cd /usr/share/nginx/html
+#   cat index.html    // Notice it's the HTML you observered previously.
+#   echo "Hi there!" > index.html
+#   cat index.html    // Notice the new contents of index.html.
+#   exit
+
+# Setup port forwarding again
 kubectl port-forward [pod-name] 8080:80
 
-# Open browser to localhost:8080
-# Observe the response is different
+# Open browser to localhost:8080.
+# Observe the response contains the new text that was added.
 
-# Kill the pod - kubernetes will re-create it
+# Press Ctrl-c to terminate the port forwarding.
+
+# Kill the pod - kubernetes will re-create it since this
+# is part of a 'Deployment'.
 kubectl delete pod [pod-name]
 
-# Setup port forwarding
+# List the new pod that was created.
+kubectl get pods
+
+# Setup port forwarding to the new pod
 kubectl port-forward [pod-name] 8080:80
 
 # Open browser to localhost:8080
 # Observe the response is the original nginx response.
-# Our change was not persisted.
+# Our change was *not* persisted when the pod was
+# deleted and then re-created.
+
+# Press Ctrl-c to terminate the port forwarding.
 
 # Delete the deployment
-kubectl delete -f ./nginx-deployment-01.yaml
+kubectl delete -f ./01-pod-storage.yaml
 ```
 
+### Summary
+
+In this tutorial, you observed that the lifecycle of default storage for a pod follows the lifecycle of the pod.  If a pod is deleted and re-created for any reason, any data written to the filesystem in the pod is lost.
+
+You also observed that you didn't have to add any volume configuration to the configuration for this to work.  However, if you wanted to be explicit about it, you could add the `spec.volumes` and `spec.containers.volumeMounts` as shown in `01-pod-storage-explicit.yaml`.  It would be a good idea to review `01-pod-storage-explicit.yaml` and understand the configuration because it will be used in subsequent tutorials.
 
 ## Static Node Storage (local)
 
@@ -277,4 +320,5 @@ To do...
 # Re-enable the cluster autoscaler
 az aks update --resource-group fruit-smoothies-rg --name fruit-smoothies-6485-aks --enable-cluster-autoscaler --min-count 1 --max-count 3
 
+# (optional) Delete the storage accounts that were dynamically created
 ```
