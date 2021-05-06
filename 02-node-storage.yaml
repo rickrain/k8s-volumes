@@ -12,7 +12,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-deployment
+  name: node-storage
 spec:
   selector:
     matchLabels:
@@ -35,4 +35,4 @@ spec:
           azureDisk:
             kind: Managed
             diskName: pv-static-disk
-            diskURI: <your disk URO>
+            diskURI: <your disk URI>
