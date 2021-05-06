@@ -184,12 +184,32 @@ kubectl delete secret azure-storage
 
 # Delete the storage account
 az storage account delete --name $STG_ACCOUNT_NAME --resource-group $NODE_RG --yes
-
 ```
 
 ## Dynamic NFS/SMB storage
 
-To do...
+To do... 
+
+```bash
+# Apply deployment
+kubectl apply -f ./nginx-deployment-05.yaml
+
+# Wait for public IP address
+# Notice also the extra time it takes for the pod to get to a running state.  This is because
+# - The storage account is getting created
+# - The share is created
+# - The PV and PVC are getting generated
+# - The pod then can mount
+# Open browser to public IP address - observe the response, which is the hostname
+# from the node the pod is running on.
+
+# Scale out the replicas to 20 so that you get pods spread across the two nodes.
+kubectl scale deployment nginx-deployment-05 --replicas=20
+
+# Delete the deployment
+kubectl delete -f ./nginx-deployment-05.yaml
+```
+
 
 ## Increase capacity in PVC
 
