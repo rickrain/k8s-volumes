@@ -155,7 +155,37 @@ kubectl delete -f ./nginx-deployment-03.yaml
 
 ## Static NFS/SMB storage - explicit definitions
 
-To do...
+```bash
+# Apply deployment
+kubectl apply -f ./nginx-deployment-04.yaml
+
+# Wait for public IP address
+# Open browser to public IP address - observe the response, which is the hostname
+# from the node the pod is running on.
+
+# Scale out the replicas to 20 so that you get pods spread across the two nodes.
+kubectl scale deployment nginx-deployment-03 --replicas=20
+
+# Show all the pods *and* the node that each pod is running on.
+# Notice that this time all 20 pods are running.  That is because the volume mount
+# is mounting an Azure File Share, which supports SMB 3.0 and muliple R/W nodes simultaneously.
+kubectl get pods --output wide
+
+# Show the pv and pvc that was created in the Azure portal.
+# This is a good time to introduce Storage classes and to point out the 4 default storage classes AKS provides.
+# The reason this is important is because we can use a storage class to dynamically create PV/PVC's, which is
+# the recommended best practice and what we will see in the next section.
+
+# Delete the deployment
+kubectl delete -f ./nginx-deployment-03.yaml
+
+# Delete the secret
+kubectl delete secret azure-storage
+
+# Delete the storage account
+az storage account delete --name $STG_ACCOUNT_NAME --resource-group $NODE_RG --yes
+
+```
 
 ## Dynamic NFS/SMB storage
 
