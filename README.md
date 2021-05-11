@@ -4,8 +4,6 @@
 
 Applications/workloads running in Kubernetes often times have requirements to store data that the application depends on.  For example, if you were to run a containerized version of WordPress or Drupal on Kubernetes, the static content (ie: blogs, pictures, etc.) would be stored on a local file system.  To support applications with such requirements in Kubernetes, we rely on Kubernetes resources, such as [persistent volumes (PV)](https://kubernetes.io/docs/concepts/storage/persistent-volumes/), [persistent volune claims (PVC)](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims), and [storage classes (SC)](https://kubernetes.io/docs/concepts/storage/storage-classes/).
 
-Todo... brief intro to PV,PVC and SC...
-
 This module will guide you through the tutorials below to give you hands-on experience configuring and using persistent volumes/claims and storage classes.
 
 - [Pod storage](#tutorial-pod-storage)
@@ -26,10 +24,6 @@ The following are required to successfully complete this module.
 _(10 minutes)_
 
 In this tutorial, you will explore volume storage that is local to a pod.  This kind of volume storage is created when a pod is scheduled to a node and is removed when a pod is removed from the node (for any reason).  If a pod is re-created, even on the same node, any data that was written to the volume previously is lost.  In Kubernetes, this kind of storage/persistence is known as the [`emptyDir` volume](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir).
-
-The following diagram illustrates this kind of storage/persistence in a pod.
-
-TODO: Insert diagram here
 
 This tutorial will use an nginx container running on your cluster to demonstrate the learning objectives.  Before proceeding, review [`01-pod-storage.yaml`](./01-pod-storage.yaml) to familiarize yourself with what it does.
 
@@ -104,10 +98,6 @@ You also observed that you didn't have to add any volume configuration to the co
 _(15 minutes)_
 
 In this tutorial, you will explore volume storage that is attached to a node.  In Azure, this kind of volume storage is attached to a node as an [Azure data disk](https://azure.microsoft.com/en-us/services/storage/disks/).  Because the volume is attached to the node, multiple pods running on a node are able to persist and share data.  This also allows a pod to retrieve that data if the pod gets deleted and re-created on the node.
-
-The following diagram illustrates this kind of storage/persistence on the node.
-
-TODO: Insert diagram here
 
 This tutorial uses the same nginx container you used previously to demonstrate the learning objectives.  Before proceeding, review [`02-node-storage.yaml`](./02-node-storage.yaml) to familiarize yourself with what it does.  In particular, notice the following changes:
 
@@ -253,10 +243,6 @@ In this tutorial, you learned how an [azureDisk volume](https://kubernetes.io/do
 _(10 minutes)_
 
 In this tutorial, you will explore volume storage that can be shared simultaneously across multiple nodes. 
-
-The following diagram illustrates this kind of storage/persistence on the node.
-
-TODO: Insert diagram here
 
 This tutorial uses the same nginx container you used previously to demonstrate the learning objectives.  Before proceeding, review [`03-shared-storage.yaml`](./03-shared-storage.yaml) to familiarize yourself with what it does.  In particular, notice the following changes:
 
