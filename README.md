@@ -11,7 +11,7 @@ This module will guide you through the tutorials below to give you hands-on expe
 - [Pod storage](#tutorial-pod-storage)
 - [Node storage (static)](#tutorial-node-storage-static)
 - [Shared storage (static)](#tutorial-shared-storage-static)
-- [Shared storage (static) with PV/PVC](#tutorial-shared-storage-with-pv-pvc-static)
+- [Shared storage (static) with PV/PVC](#tutorial-shared-storage-with-pvpvc-static)
 - [Shared storage (dynamic)](#tutorial-shared-storage-dynamic) - Recommended 
 - [Volume expansion](#tutorial-volume-expansion)
 
@@ -33,6 +33,9 @@ TODO: Insert diagram here
 
 This tutorial will use an nginx container running on your cluster to demonstrate the learning objectives.  Before proceeding, review [`01-pod-storage.yaml`](./01-pod-storage.yaml) to familiarize yourself with what it does.
 
+### Step-by-step instructions
+
+Execute the commands below from a bash command shell.  Alternatively, you can use the [Azure Cloud Shell](https://docs.microsoft.com/en-us/azure/cloud-shell/overview) in the Azure portal.
 
 ```bash
 # Apply deployment to the cluster
@@ -93,14 +96,14 @@ kubectl delete -f ./01-pod-storage.yaml
 
 ### Summary
 
-In this tutorial, you observed that the lifecycle of default storage for a pod follows the lifecycle of the pod.  If a pod is deleted and re-created for any reason, any data written to the filesystem in the pod is lost.
+In this tutorial, you observed that, by default, the lifecyle of storage used by a pod follows the lifecycle of the pod.  If a pod is deleted and re-created for any reason, any data written to the filesystem in the pod is lost.
 
-You also observed that you didn't have to add any volume configuration to the configuration for this to work.  However, if you wanted to be explicit about it, you could add the `spec.volumes` and `spec.containers.volumeMounts` as shown in `01-pod-storage-explicit.yaml`.  It would be a good idea to review `01-pod-storage-explicit.yaml` and understand the configuration because it will be used in subsequent tutorials.
+You also observed that you didn't have to add any volume configuration to the configuration for this to work.  However, if you wanted to be explicit about it, you could add the `spec.volumes` and `spec.containers.volumeMounts` as shown in `01-pod-storage-explicit.yaml`.  It would be a good idea to review [`01-pod-storage-explicit.yaml`](./01-pod-storage-explicit.yaml) and understand the configuration because it will be used in subsequent tutorials.
 
 ## Tutorial: Node Storage (static)
 _(15 minutes)_
 
-In this tutorial, you will explore volume storage that is attached to a node.  This kind of volume storage is attached to a node as a data disk.  Because the volume is attached to the node, multiple pods are able to persist and share data.  This also allows a pod to retrieve that data if it gets deleted and re-created on the node.
+In this tutorial, you will explore volume storage that is attached to a node.  In Azure, this kind of volume storage is attached to a node as an [Azure data disk](https://azure.microsoft.com/en-us/services/storage/disks/).  Because the volume is attached to the node, multiple pods running on a node are able to persist and share data.  This also allows a pod to retrieve that data if the pod gets deleted and re-created on the node.
 
 The following diagram illustrates this kind of storage/persistence on the node.
 
@@ -108,16 +111,16 @@ TODO: Insert diagram here
 
 This tutorial uses the same nginx container you used previously to demonstrate the learning objectives.  Before proceeding, review [`02-node-storage.yaml`](./02-node-storage.yaml) to familiarize yourself with what it does.  In particular, notice the following changes:
 
-- A public load balancer is added.  This is added simply to make it easier for you to interact with the nginx container(s) withouth having to do port-forwarding like you did in the previous tutorial.
+- A public load balancer is added as a [service](https://kubernetes.io/docs/concepts/services-networking/service/) resource.  This is added simply to make it easier for you to interact with the nginx container(s) withouth having to do port-forwarding like you did in the previous tutorial.
 - An `azureDisk` volume called "html" was added to `spec.volumes`.
-  - Notice the `diskURI` property. You will replace this value with a resource you will create shortly.
+  - Notice the `diskURI` property. You will replace this value with the disk resource ID of a disk you will create shortly.
 - The "html" volume is mounted in the container via the configuration at `spec.containers.volumeMounts`.
 
 ### Preliminary cluster coniguration
 
 Before you apply this deployment to your cluster, there are a few items that need to be done first as described here:
 
-- Disable the cluster auto-scaler.  This is so you can manually scale the nodes.  At the end of the module, this will be re-enabled so your cluster is put back to it's original state.
+- Disable the cluster auto-scaler.  Doing this will allow you to manually scale the nodes.  At the end of the module, this will be re-enabled so your cluster is put back to it's original state.
 - Scale the cluster to two (2) nodes.
 - Create a disk that can be attached to a node in the cluster.
 
@@ -154,12 +157,11 @@ Print out the the resource ID of the disk you created.
 echo $DISK_RESOURCE_ID
 ```
 
-Open `02-node-storage.yaml` in an editor and replace "<your disk URI>" with the value from above, and then save your change.
+Open `02-node-storage.yaml` in an editor and replace "\<your disk URI\>" with the value from above, and then save your change.
 
-### Work through the tutorial
+### Step-by-step instructions
 
-Now that the changes above are in place, you're ready to start the tutorial.
-
+Now that the changes above are in place, you're ready to start the tutorial.  Execute the commands below from a bash command shell.  Alternatively, you can use the [Azure Cloud Shell](https://docs.microsoft.com/en-us/azure/cloud-shell/overview) in the Azure portal.
 
 ```bash
 # Apply deployment to the cluster
@@ -245,7 +247,7 @@ az disk delete --ids $DISK_RESOURCE_ID --yes
 
 ### Summary
 
-In this tutorial, you learned how an `azureDisk` volume can be used to provide storage at the node level.  As a result, you were able to observe that when a pod is deleted, data that has previously written to the volume is not lost.  You also observed a limitation with this kind of volume, which is, it can only be attached to a single node at a time.  This is by design.  However, there is a way enable simultaneous RW access to a volume form multiple nodes.  You will learn how to do that in the next tutorial.
+In this tutorial, you learned how an [azureDisk volume](https://kubernetes.io/docs/concepts/storage/volumes/#azuredisk) can be used to provide storage at the node level.  As a result, you were able to observe that when a pod is deleted, data that was previously written to the volume is not lost.  You also observed a limitation with this kind of volume, which is, it can only be attached to a single node at a time.  This is by design.  However, there is a way enable simultaneous RW access to a volume form multiple nodes.  You will learn how to do that in the next tutorial.
 
 ## Tutorial: Shared Storage (static)
 _(10 minutes)_
@@ -289,9 +291,9 @@ STG_ACCOUNT_KEY=$(az storage account keys list --account-name $STG_ACCOUNT_NAME 
 kubectl create secret generic azure-storage --from-literal=azurestorageaccountname=$STG_ACCOUNT_NAME --from-literal=azurestorageaccountkey=$STG_ACCOUNT_KEY
 ```
 
-### Work through the tutorial
+### Step-by-step instructions
 
-Now that the changes above are in place, you're ready to start the tutorial.
+Now that the changes above are in place, you're ready to start the tutorial.  Execute the commands below from a bash command shell.  Alternatively, you can use the [Azure Cloud Shell](https://docs.microsoft.com/en-us/azure/cloud-shell/overview) in the Azure portal.
 
 ```bash
 # Apply deployment
@@ -329,13 +331,22 @@ kubectl delete -f ./03-shared-storage.yaml
 
 ### Summary
 
-Todo...
-
+In this tutorial, you learned how an [azureFile volume](https://kubernetes.io/docs/concepts/storage/volumes/#azurefile) can be used to provide storage that can be simultaniously mounted and used by multiple nodes.  As a result, you were able to scale the replicaset such that pods were running on all the nodes in the cluster and simultaneously updating the html file returned by nginx.
 
 ## Tutorial: Shared Storage with PV/PVC (static)
 _(10 minutes)_
 
-The previous tutorials have defined persistent volumes _inline_ as part of the pod spec so that the focus would be on learning about some of the different volume types.  In this tutorial, you will see the `persistentVolume` and `persistentVolumeClaims` resources defined independently and explore in more depth how they are configured.  However, the functional aspects of the application will be exactly the same as in the previous tutorial.
+The previous two tutorials have defined persistent volumes _inline_ as part of the pod spec so that the focus would be on learning characteristics of the different volume types.  In this tutorial, you will see the `persistentVolume` and `persistentVolumeClaims` resources defined independently and explore in more depth how they are configured.  However, the functional aspects of the application will be exactly the same as in the previous tutorial.
+
+This tutorial uses the same nginx container you used previously to demonstrate the learning objectives.  Before proceeding, review [`04-shared-storage.yaml`](./04-shared-storage.yaml) to familiarize yourself with what it does.  In particular, notice the following changes:
+
+- A `persistentVolume` resource was added.
+- A `persistentVolumeClaim` resource was added.  Notice how the `matchLabels` are used to ensure that the `persistentVolume` (above) is used.
+- The `volumes` section of the pod spec was updated to reference the `persistentVolumeClaim`.
+
+### Step-by-step instructions
+
+Execute the commands below from a bash command shell.  Alternatively, you can use the [Azure Cloud Shell](https://docs.microsoft.com/en-us/azure/cloud-shell/overview) in the Azure portal.
 
 ```bash
 # Apply deployment
@@ -382,6 +393,11 @@ az storage account delete --name $STG_ACCOUNT_NAME --resource-group $NODE_RG --y
 
 ### Summary
 
+In this tutorial, you learned how you can explicitly configure a `persistentVolume` and `persistentVolumeClaim` for your application to use.  
+
+As a best practice, you should not configure a persistent (PV) volume as part of a application/workload manifest.  As you have seen, PV's have a 1:1 relationship to some type of persistent storage, such as a disk, file share, or other.  PV's and the storage behind them are typically defined and managed by the team responsible for managing the cluster.  While, an application/workload simply "claims" the persistent storage it needs through a PVC.  
+
+Therefore, a Kubernetes best practice is to let Kubernetes [dynamically provision the PV](https://kubernetes.io/docs/concepts/storage/dynamic-provisioning/), which you will explore in the next tutorial.
 
 ## Tutorial: Shared storage (dynamic)
 _(10 minutues)_
@@ -397,6 +413,10 @@ This tutorial uses the same nginx container you used previously to demonstrate t
   - The `storageClass` property is set to `azurefile-premium`, which is one of the 4 default storage classes AKS provides.  As the name implies, this is simply indicating that we want an Azure File Share (premium SKU) to be configured as the backing store of the `persistentVolume`.
 
   > Note: In cases where the default storage classes don't meet your specific application needs, you should consider creating a custom `storageClass` resource.
+
+### Step-by-step instructions
+
+Execute the commands below from a bash command shell.  Alternatively, you can use the [Azure Cloud Shell](https://docs.microsoft.com/en-us/azure/cloud-shell/overview) in the Azure portal.
 
 ```bash
 # Apply deployment
