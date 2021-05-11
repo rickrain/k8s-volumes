@@ -6,7 +6,6 @@ spec:
   accessModes:
     - ReadWriteMany
   storageClassName: azurefile
-  
   resources:
     requests:
       storage: 5Gi

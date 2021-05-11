@@ -1,14 +1,19 @@
 # Persistent Volumes, Claims, and Storage Classes
 
 ## Introduction
-TODO: Brief introduction to the module here....
 
-This module will guide you through the tutorials below.
-- Pod storage
-- Node storage (static)
-- File share storage (static)
-- File share storage (dynamic)
-- File share volume expansion
+Applications/workloads running in Kubernetes often times have requirements to store data that the application depends on.  For example, if you were to run a containerized version of WordPress or Drupal on Kubernetes, the static content (ie: blogs, pictures, etc.) would be stored on a local file system.  To support applications with such requirements in Kubernetes, we rely on Kubernetes resources, such as [persistent volumes (PV)](https://kubernetes.io/docs/concepts/storage/persistent-volumes/), [persistent volune claims (PVC)](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims), and [storage classes (SC)](https://kubernetes.io/docs/concepts/storage/storage-classes/).
+
+Todo... brief intro to PV,PVC and SC...
+
+This module will guide you through the tutorials below to give you hands-on experience configuring and using persistent volumes/claims and storage classes.
+
+- [Pod storage](#tutorial-pod-storage)
+- [Node storage (static)](#tutorial-node-storage-static)
+- [Shared storage (static)](#tutorial-shared-storage-static)
+- [Shared storage (static) with PV/PVC](#tutorial-shared-storage-with-pv-pvc-static)
+- [Shared storage (dynamic)](#tutorial-shared-storage-dynamic) - Recommended 
+- [Volume expansion](#tutorial-volume-expansion)
 
 ## Pre-requisites
  
@@ -293,9 +298,8 @@ Now that the changes above are in place, you're ready to start the tutorial.
 kubectl apply -f ./03-shared-storage.yaml
 
 # Wait for the 'volumes-lb' service to get a public IP
-kubectl get svc -w
-
 # When you see a value for the 'EXTERNAL_IP', press Ctrl-c
+kubectl get svc -w
 
 # Browse to the public IP address of the 'volumes-lb' service.
 # Observe the response, which is "hello from shared-storage...".
@@ -323,13 +327,24 @@ kubectl get pods --output wide
 kubectl delete -f ./03-shared-storage.yaml
 ```
 
-## Static NFS/SMB storage - explicit definitions
+### Summary
+
+Todo...
+
+
+## Tutorial: Shared Storage with PV/PVC (static)
+_(10 minutes)_
+
+The previous tutorials have defined persistent volumes _inline_ as part of the pod spec so that the focus would be on learning about some of the different volume types.  In this tutorial, you will see the `persistentVolume` and `persistentVolumeClaims` resources defined independently and explore in more depth how they are configured.  However, the functional aspects of the application will be exactly the same as in the previous tutorial.
 
 ```bash
 # Apply deployment
 kubectl apply -f ./04-shared-storage.yaml
 
-# Wait for public IP address
+# Wait for the 'volumes-lb' service to get a public IP
+# When you see a value for the 'EXTERNAL_IP', press Ctrl-c
+kubectl get svc -w
+
 # Open browser to public IP address - observe the response, which is the hostname
 # from the node the pod is running on.
 
@@ -337,14 +352,23 @@ kubectl apply -f ./04-shared-storage.yaml
 kubectl scale deployment nginx-deployment-03 --replicas=20
 
 # Show all the pods *and* the node that each pod is running on.
-# Notice that this time all 20 pods are running.  That is because the volume mount
+# Again, just like in the previous tutorial, all 20 pods are running.  That is because the volume mount
 # is mounting an Azure File Share, which supports SMB 3.0 and muliple R/W nodes simultaneously.
 kubectl get pods --output wide
 
+# Show the persistent volume
+kubectl get pv
+kubectl describe pv task-pv-volume
+
+# Show the persistent volume claim
+kubectl get pvc
+kubectl describe pvc file-storage-claim
+
 # Show the pv and pvc that was created in the Azure portal.
-# This is a good time to introduce Storage classes and to point out the 4 default storage classes AKS provides.
-# The reason this is important is because we can use a storage class to dynamically create PV/PVC's, which is
-# the recommended best practice and what we will see in the next section.
+
+# This is a good time to introduce Storage classes (int the portal) and to point out the 4 default 
+# storage classes AKS provides. This is important because we can use a storage class to dynamically create 
+# PV/PVC's, which is the recommended best practice and what we will see in the next section.
 
 # Delete the deployment
 kubectl delete -f ./04-shared-storage.yaml
@@ -356,53 +380,100 @@ kubectl delete secret azure-storage
 az storage account delete --name $STG_ACCOUNT_NAME --resource-group $NODE_RG --yes
 ```
 
-## Dynamic NFS/SMB storage
+### Summary
 
-To do... 
+
+## Tutorial: Shared storage (dynamic)
+_(10 minutues)_
+
+In previous tutorials, you observed how a `persistentVolume` binds to peristent storage, such as an Azure Disk or Azure File Share.  Recall that in those tutorial, you had to manually create the persistent storage and define a persistent volume to bind to it.  And in the case of Azure File storage, you also had to create a kubernetes secret containing the keys to access the storage account.  
+
+The previous tutorials, while technically feasible, do not represent best practices for attaching and using persistent volumes from your pod. As you have observed, manually creating persistent storage and configuring them for use is tedious work and prone to error.  There is a better way, which is to _dynamically_ create the persistent storage and volume.  This approach is also a [documented best practice](https://docs.microsoft.com/en-us/azure/aks/operator-best-practices-storage#dynamically-provision-volumes).  You will learn how to do this in this tutorial.
+ 
+This tutorial uses the same nginx container you used previously to demonstrate the learning objectives.  Before proceeding, review [`05-shared-storage.yaml`](./05-shared-storage.yaml) to familiarize yourself with what it does.  In particular, notice the following changes:
+
+- The `persistentVolume` resource has been removed.  It will be dynamically generated this time for us based on the claims in the `persistentVolumeClaim` (see next).
+- The `persistentVolumeClaim` resource has been modified as follows:
+  - The `storageClass` property is set to `azurefile-premium`, which is one of the 4 default storage classes AKS provides.  As the name implies, this is simply indicating that we want an Azure File Share (premium SKU) to be configured as the backing store of the `persistentVolume`.
+
+  > Note: In cases where the default storage classes don't meet your specific application needs, you should consider creating a custom `storageClass` resource.
 
 ```bash
 # Apply deployment
 kubectl apply -f ./05-shared-storage.yaml
 
-# Wait for public IP address
+# List the pod that was created and wait for it to be 'Running'.
+# Press ctrl-c when it is 'Running'.
+kubectl get pods -w
+
 # Notice also the extra time it takes for the pod to get to a running state.  This is because
 # - The storage account is getting created
 # - The share is created
 # - The PV and PVC are getting generated
-# - The pod then can mount
+# - A kubernetes secret is created
+# - The pod then can mount the PV
+# Observe all this in the Azure portal.
+
+# Wait for the 'volumes-lb' service to get a public IP
+# When you see a value for the 'EXTERNAL_IP', press Ctrl-c
+kubectl get svc -w
+
 # Open browser to public IP address - observe the response, which is the hostname
 # from the node the pod is running on.
-
-# Scale out the replicas to 20 so that you get pods spread across the two nodes.
-kubectl scale deployment dynamic-shared-storage --replicas=20
 
 # Delete the deployment
 kubectl delete -f ./05-shared-storage.yaml
 
 # Show that the pvc is deleted.
 # Also, notice that the pv that was dynamically created is deleted.
-# And finally, notice that the storage account is *not* deleted and the data in the share is still there.
-# - explain why...
-# - explain what you would change if you wanted the storage account deleted too.
+# And finally, notice that the storage account is *not* deleted, but the file share is.
 ```
 
-## Increase capacity in PVC
+### Summary
 
-To do...
+In this tutorial, you learned how to configure a `persistentVolumeClaim` to dymically provision a `persistenVolume` and the underlying storage for your aplication to use.  The key to enabling this was to simply specify a _storageClass_ in the `persistentVolumeClaim.  Everything else was taken care of for you, including
+
+- Creating the storage account
+- Creating the file share in the storage account
+- Creating the `persistentVolume`
+- Creating the kubernetes secret containing the storage account key
+
+This tutorial used an Azure File Share so you could observe how the storage account and secrets are created for you.  This concept should also be used if your application just needs node storage (Azure Disk).  In that case, you can _dynamically_ create the `persistentVolume` and underlying Azure Disk just like you did here - just change the _storageClass_ property in the `persistentVolumeClaim`.
+
+## Tutorial: Volume Expansion
+_(10 minutes)_
+
+Sometimes it is necessary to increase the storage available to your application.  In this tutorial, you will see how you can upate the `persistentVolumeClaim` to increase the storage available to your application.
+
+This tutorial **does not** use the same nginx container you used previously to demonstrate the learning objectives.  Before proceeding, review [`06-volume-expansion.yaml`](./06-volume-expansion.yaml) to familiarize yourself with what it does.  In particular, notice the following changes:
+
+- There is just one container, called _"big-data-producer"_ that will be deployed.  This container simply generates a 500MB file in the shared volume.
+- The `service` resource has been removed.  It's not needed for the learning objectives in this tutorial since the nginx container spec was removed.
+- The `persistentVolumeClaim` has been updated as follows:
+  - The _storageClass_ property is changed from _azurefile-premium_ to _azurefile_.  The only reason for this is that the _azurefile-premium_ storage class has a minumum capacity of 100GB.  In this tutorial, we're going to generate data until we run out of capacity.  But, to generate 100GB of data could take a while.  So, we're going to use the _azurefile_ storage class instead so we can request a smaller amount of storage initially.
+  - The _storage_ capacity is changed to 5GB. 
 
 ```bash
 # Apply deployment
 kubectl apply -f ./06-volume-expansion.yaml
 
-# Show how the container just creates a 500MB file in the file share.
+# List the pod that was created and wait for it to be 'Running'.
+# Press ctrl-c when it is 'Running'.
+kubectl get pods -w
 
-# Scale out the replicas to 11 and observe the files getting created in the file share
+# Explore the storage account and file share that was dynamically created.
+# Observe that the container created a 500MB file in the file share.  
+
+# Scale out the replicas to 11
 kubectl scale deployment dynamic-shared-storage --replicas=11
 
-# Get a list of all the pods running
-k get pods
+# Get a list of all the pods and wait for the status to change.
+# Eventually, you will see one of the pods 
+kubectl get pods -w
 
-# observe that one of the pods is going to fail.  This is because the file share ran out of space.
+# Observe the additional files getting created in the file share, eventually using up all the space available.
+
+# Observe that one of the pods is going to fail.  This is because the file share ran out of space.
 # show the error
 k logs [failed pod name]
 
@@ -429,12 +500,6 @@ kubectl scale deployment dynamic-shared-storage --replicas=14
 
 # Delete the deployment
 kubectl delete -f ./06-volume-expansion.yaml
-
-# Show that the pvc is deleted.
-# Also, notice that the pv that was dynamically created is deleted.
-# And finally, notice that the storage account is *not* deleted and the data in the share is still there.
-# - explain why...
-# - explain what you would change if you wanted the storage account deleted too.
 ```
 
 ## Wrap up
