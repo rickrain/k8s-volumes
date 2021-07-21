@@ -32,7 +32,7 @@ In this tutorial, you will explore volume storage that is local to a pod.  This 
 
 The graphic below illustrates the lifecycle of an `emptyDir` mounted to a pod.
 
-![Kubernetes PV/PVC overview](./images/k8s-volumes-emptyDir.png)
+![emptyDir Volume](./images/k8s-volumes-emptyDir.png)
 
 This tutorial will use an nginx container running on your cluster to demonstrate the learning objectives.  Before proceeding, review [`01-pod-storage.yaml`](./01-pod-storage.yaml) to familiarize yourself with what it does.
 
@@ -110,7 +110,7 @@ In this tutorial, you will explore volume storage that is attached to a node.  I
 
 The graphic below illustrates the lifecycle of an `azureDisk` mounted to a pod.
 
-![Kubernetes PV/PVC overview](./images/k8s-volumes-azureDisk.png)
+![azureDisk Volume](./images/k8s-volumes-azureDisk.png)
 
 This tutorial uses the same nginx container you used previously to demonstrate the learning objectives.  Before proceeding, review [`02-node-storage.yaml`](./02-node-storage.yaml) to familiarize yourself with what it does.  In particular, notice the following changes:
 
@@ -250,6 +250,10 @@ In this tutorial, you learned how an [azureDisk volume](https://kubernetes.io/do
 _(10 minutes)_
 
 In this tutorial, you will explore volume storage that can be shared simultaneously across multiple nodes. 
+
+The graphic below illustrates the lifecycle of an `azureFile` mounted to a pod.
+
+![azureFile Volume](./images/k8s-volumes-azureFile.png)
 
 This tutorial uses the same nginx container you used previously to demonstrate the learning objectives.  Before proceeding, review [`03-shared-storage.yaml`](./03-shared-storage.yaml) to familiarize yourself with what it does.  In particular, notice the following changes:
 
