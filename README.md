@@ -22,8 +22,8 @@ This module will guide you through the tutorials below to give you hands-on expe
 The following are required to successfully complete this module.
 
 - Azure Subscription (commercial or government)
-- Bash shell - Ubuntu, Mac, Windows (WSL), Azure Portal (cloud-shell)
-- An AKS instance 
+- Bash shell on either Ubuntu, Mac, Windows (WSL), or using the Azure Portal (cloud-shell)
+- An AKS instance (instructions to create one are [here](https://docs.microsoft.com/en-us/azure/aks/tutorial-kubernetes-deploy-cluster?tabs=azure-cli))
 
 ## Tutorial: Pod storage
 _(10 minutes)_
@@ -106,7 +106,7 @@ You also observed that you didn't have to add any volume configuration to the co
 ## Tutorial: Node Storage (static)
 _(15 minutes)_
 
-In this tutorial, you will explore volume storage that is attached to a node.  In Azure, this kind of volume storage is attached to a node as an [Azure data disk](https://azure.microsoft.com/en-us/services/storage/disks/).  Because the volume is attached to the node, multiple pods running on a node are able to persist and share data.  This also allows a pod to retrieve that data if the pod gets deleted and re-created on the node.
+In this tutorial, you will explore volume storage that is attached to a node.  In Azure, this kind of volume storage is attached to a node as an [Azure data disk](https://azure.microsoft.com/en-us/services/storage/disks/).  Because the volume is attached to the node, multiple pods running on a node are able to persist and share data.  This also allows a pod to retrieve that data if the pod gets deleted and re-created on the node.  In Kubernetes, this kind of volume is known as an [azureDisk](https://kubernetes.io/docs/concepts/storage/volumes/#azuredisk) volume.
 
 The graphic below illustrates the lifecycle of an `azureDisk` mounted to a pod.
 
@@ -249,7 +249,7 @@ In this tutorial, you learned how an [azureDisk volume](https://kubernetes.io/do
 ## Tutorial: Shared Storage (static)
 _(10 minutes)_
 
-In this tutorial, you will explore volume storage that can be shared simultaneously across multiple nodes. 
+In this tutorial, you will explore volume storage that can be shared simultaneously across multiple nodes.  This is known as an [azureFile ](https://kubernetes.io/docs/concepts/storage/volumes/#azurefile) volume in Kubernetes.  This volume supports the SMB 3.0 protocol, which allows for simultaneous read and write access to the file share.
 
 The graphic below illustrates the lifecycle of an `azureFile` mounted to a pod.
 
