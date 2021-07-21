@@ -108,6 +108,10 @@ _(15 minutes)_
 
 In this tutorial, you will explore volume storage that is attached to a node.  In Azure, this kind of volume storage is attached to a node as an [Azure data disk](https://azure.microsoft.com/en-us/services/storage/disks/).  Because the volume is attached to the node, multiple pods running on a node are able to persist and share data.  This also allows a pod to retrieve that data if the pod gets deleted and re-created on the node.
 
+The graphic below illustrates the lifecycle of an `azureDisk` mounted to a pod.
+
+![Kubernetes PV/PVC overview](./images/k8s-volumes-azureDisk.png)
+
 This tutorial uses the same nginx container you used previously to demonstrate the learning objectives.  Before proceeding, review [`02-node-storage.yaml`](./02-node-storage.yaml) to familiarize yourself with what it does.  In particular, notice the following changes:
 
 - A public load balancer is added as a [service](https://kubernetes.io/docs/concepts/services-networking/service/) resource.  This is added simply to make it easier for you to interact with the nginx container(s) withouth having to do port-forwarding like you did in the previous tutorial.
