@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
       - name: big-data-producer
-        image: ubuntu:latest
+        image: busybox
         # Generate a 500MB file in the file share.
         command: [ 'sh', '-c', 'dd if=dev/zero of=/usr/share/$HOSTNAME.txt count=1024 bs=524288 && tail -f /dev/null' ]
         volumeMounts:

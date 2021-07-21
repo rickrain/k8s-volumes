@@ -10,7 +10,7 @@ The graphic below illustrates the relationship between a pod, PVC, PV, and Kuber
 ![Kubernetes PV/PVC overview](./images/k8s-volumes.png)
 
 
-This module will guide you through the tutorials below to give you hands-on experience configuring and using persistent volumes/claims and storage classes.  You will start by examining the simplest storage, which is ephemeral _pod_ storage.  Next, you will got through some laborious exercises to statically configure _node_ storage and then _shared_ storage.  The reason you will do these laborious and error-proned exercises is so that you can understand and appreciate what is happening when you _dyanamically_ request storage for your applications, which is the recommended pattern for configuring storage on your cluster.  Finally, the last tutorial will guide you through the steps to expand a volume to allocate more storage for your applications.
+This module will guide you through the tutorials below to give you hands-on experience configuring and using persistent volumes/claims and storage classes.  You will start by examining the simplest storage, which is ephemeral _pod_ storage.  Next, you will go through some laborious exercises to statically configure _node_ storage and then _shared_ storage.  The reason you will do these laborious and error-proned exercises is so that you can understand and appreciate what is happening when you _dyanamically_ request storage for your applications, which is the recommended pattern for configuring storage on your cluster.  Finally, the last tutorial will guide you through the steps to expand a volume to allocate more storage for your applications.
 
 - [Pod storage](#tutorial-pod-storage)
 - [Node storage (static)](#tutorial-node-storage-static)
@@ -57,7 +57,7 @@ kubectl port-forward [pod-name] 8080:80
 # Make a change in the container's file system
 # Specifically, change the contents of the 'index.html' file
 # that nginx returns when you browse to it.
-kubectl exec --stdin --tty [pod-name] -- /bin/bash
+kubectl exec [pod-name] -it -- /bin/bash
 
 # Now you are in the pod's file system.  Perform the following commands:
 
@@ -117,7 +117,7 @@ This tutorial uses the same nginx container you used previously to demonstrate t
 
 Before you apply this deployment to your cluster, there are a few items that need to be done first as described here:
 
-- Disable the cluster auto-scaler.  Doing this will allow you to manually scale the nodes.  At the end of the module, this will be re-enabled so your cluster is put back to it's original state.
+- Disable the cluster auto-scaler (if applicable).  Doing this will allow you to manually scale the nodes.  At the end of the module, this can be re-enabled so your cluster is put back to it's original state.
 - Scale the cluster to two (2) nodes.
 - Create a disk that can be attached to a node in the cluster.
 
@@ -130,8 +130,7 @@ AKS_WORKSHOP_RG="[your aks-workhsop resource group name]"
 AKS_WORKSHOP_CLUSTER="[your aks-workhsop cluster name]"
 AKS_WORKSHOP_NODE_RG=$(az aks show --resource-group $AKS_WORKSHOP_RG --name $AKS_WORKSHOP_CLUSTER --query nodeResourceGroup -o tsv)
 
-# Disable the cluster autoscaler.
-# This should already be enabled as a result of working through the AKS Workshop (see pre-requisites above).
+# Disable the cluster autoscaler (if applicable).
 az aks update --resource-group $AKS_WORKSHOP_RG --name $AKS_WORKSHOP_CLUSTER --disable-cluster-autoscaler
 
 # Scale cluster to two nodes
@@ -177,7 +176,7 @@ kubectl get pods
 
 # Make a change in the container's file system
 # Specifically, create the 'index.html' file that nginx returns when you browse to it.
-kubectl exec --stdin --tty [pod-name] -- /bin/bash
+kubectl exec [pod-name] -it -- /bin/bash
 
 # Now you are in the pod's file system.  Perform the following commands:
 
@@ -218,18 +217,13 @@ kubectl drain [node name] --ignore-daemonsets --delete-emptydir-data
 # Show all the pods *and* the node that each pod is running on.
 kubectl get pods --output wide
 
-# Notice that about ~10 pods will be 'Running' on the other node.  The remainder of the
-# 20 replicas will be in a 'Pending' state.  This is because the disk has been attached to the
-# other node.
+# Notice kubernetes rescheduled the pods to run on the other node.
 
 # Uncordon the node previously drained, so that pods can get schedule to it again.
 kubectl uncordon [node name]
 
 # Show all the pods *and* the node that each pod is running on.
 kubectl get pods --output wide
-
-# Notice that all the 'Pending' pods change to 'ContainerCreating'.  Just like before though, they will be
-# stuck in this state because the node they are scheduled for cannot attach the volume/disk.
 
 # Refresh the page in your browser - observe that "Hi there!" is returned.
 # Notice that you still get a page that says "Hi there!" 
@@ -244,7 +238,7 @@ az disk delete --ids $DISK_RESOURCE_ID --yes
 
 ### Summary
 
-In this tutorial, you learned how an [azureDisk volume](https://kubernetes.io/docs/concepts/storage/volumes/#azuredisk) can be used to provide storage at the node level.  As a result, you were able to observe that when a pod is deleted, data that was previously written to the volume is not lost.  You also observed a limitation with this kind of volume, which is, it can only be attached to a single node at a time.  This is by design.  However, there is a way enable simultaneous RW access to a volume from multiple nodes.  You will learn how to do that in the next tutorial.
+In this tutorial, you learned how an [azureDisk volume](https://kubernetes.io/docs/concepts/storage/volumes/#azuredisk) can be used to provide storage at the node level.  As a result, you were able to observe that when a pod is deleted, data that was previously written to the volume is not lost.  You also observed a limitation with this kind of volume, which is, it can only be attached to a single node at a time.  This is by design.  However, there is a way to enable simultaneous RW access to a volume from multiple nodes.  You will learn how to do that in the next tutorial.
 
 ## Tutorial: Shared Storage (static)
 _(10 minutes)_
@@ -253,7 +247,7 @@ In this tutorial, you will explore volume storage that can be shared simultaneou
 
 This tutorial uses the same nginx container you used previously to demonstrate the learning objectives.  Before proceeding, review [`03-shared-storage.yaml`](./03-shared-storage.yaml) to familiarize yourself with what it does.  In particular, notice the following changes:
 
-- A 2nd container, called "index-html-producer" has been added to the deployment.  This container does what it's name inplies, which is, produces an _index.html_ file in the `mountPath` for nginx to reply back to requests with.  The container, on startup, will add a message to the _index.html_ file and then run indefinitely. As you will soon see, this is also an example whereby a single pod can run mulitple containers.
+- An [initContainer](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/), called "index-html-producer" has been added to the deployment.  This container does what it's name inplies, which is, produces an _index.html_ file in the `mountPath` for nginx to reply back to requests with.  When the pod starts, the initContainer will add the hostname to the _index.html_ file.
 - An `azureFile` volume called "html" was added to `spec.volumes`.  This kind of volume is one backed by a storage account using the Azure File service abstraction.  The Azure File service supports SMB 3.0 protocol, which enables mutiple nodes to attach to it simultaneously.
   - Notice that it has some different properties that are needed, such as a `secretName` which is where it can get a key to connect to the storage account where the file share exists.
 
@@ -370,7 +364,7 @@ kubectl describe pvc file-storage-claim
 
 # Show the pv and pvc that was created in the Azure portal.
 
-# This is a good time to introduce Storage classes (int the portal) and to point out the 4 default 
+# This is a good time to introduce Storage classes (in the portal) and to point out the 4 default 
 # storage classes AKS provides. This is important because we can use a storage class to dynamically create 
 # PV/PVC's, which is the recommended best practice and what we will see in the next section.
 
@@ -516,4 +510,3 @@ kubectl delete -f ./06-volume-expansion.yaml
 ### Summary
 
 In this tutorial, you learned how to expand the amount of storage your application needs by updating the `resources.requests.storage` property in the `persistentVolumeClaim` definition.
-
