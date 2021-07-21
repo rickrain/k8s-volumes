@@ -6,9 +6,7 @@ Applications/workloads running in Kubernetes often times have requirements to st
 
 The graphic below illustrates the relationship between a pod, PVC, PV, and Kubernetes.
 
-
 ![Kubernetes PV/PVC overview](./images/k8s-volumes.png)
-
 
 This module will guide you through the tutorials below to give you hands-on experience configuring and using persistent volumes/claims and storage classes.  You will start by examining the simplest storage, which is ephemeral _pod_ storage.  Next, you will go through some laborious exercises to statically configure _node_ storage and then _shared_ storage.  The reason you will do these laborious and error-proned exercises is so that you can understand and appreciate what is happening when you _dyanamically_ request storage for your applications, which is the recommended pattern for configuring storage on your cluster.  Finally, the last tutorial will guide you through the steps to expand a volume to allocate more storage for your applications.
 
@@ -31,6 +29,10 @@ The following are required to successfully complete this module.
 _(10 minutes)_
 
 In this tutorial, you will explore volume storage that is local to a pod.  This kind of volume storage is created when a pod is scheduled to a node and is removed when a pod is removed from the node (for any reason).  If a pod is re-created, even on the same node, any data that was written to the volume previously is lost.  In Kubernetes, this kind of storage/persistence is known as the [`emptyDir` volume](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir).
+
+The graphic below illustrates the lifecycle of an `emptyDir` mounted to a pod.
+
+![Kubernetes PV/PVC overview](./images/k8s-volumes-emptyDir.png)
 
 This tutorial will use an nginx container running on your cluster to demonstrate the learning objectives.  Before proceeding, review [`01-pod-storage.yaml`](./01-pod-storage.yaml) to familiarize yourself with what it does.
 
