@@ -24,6 +24,7 @@ The following are required to successfully complete this module.
 - Azure Subscription (commercial or government)
 - Bash shell on either Ubuntu, Mac, Windows (WSL), or using the Azure Portal (cloud-shell)
 - An AKS instance (instructions to create one are [here](https://docs.microsoft.com/en-us/azure/aks/tutorial-kubernetes-deploy-cluster?tabs=azure-cli))
+- `kubectl` command line tool (instructions to install it are [here](https://kubernetes.io/docs/tasks/tools/#kubectl))
 
 ## Tutorial: Pod storage
 _(10 minutes)_
